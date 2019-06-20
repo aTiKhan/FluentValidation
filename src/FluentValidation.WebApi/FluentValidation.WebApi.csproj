@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net45</TargetFramework>
+    <TargetFramework>net461</TargetFramework>
     <PackageId>FluentValidation.WebApi</PackageId>
     <Description>ASP.NET WebApi integration for FluentValidation</Description>
     <!-- Signing is only performed as part of the release build -->
