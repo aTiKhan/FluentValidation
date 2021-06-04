@@ -17,113 +17,42 @@
 #endregion
 
 namespace FluentValidation.Validators {
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Threading;
-	using System.Threading.Tasks;
 	using Internal;
-	using Resources;
-	using Results;
 
-	public abstract class PropertyValidator : IPropertyValidator {
+	public abstract class PropertyValidator<T, TProperty> : IPropertyValidator<T,TProperty> {
 
-		/// <inheritdoc />
-		public PropertyValidatorOptions Options { get; } = new PropertyValidatorOptions();
-
-		protected PropertyValidator(IStringSource errorMessageSource) {
-			if(errorMessageSource == null) errorMessageSource = new StaticStringSource("No default error message has been specified.");
-			else if (errorMessageSource is LanguageStringSource l && l.ErrorCodeFunc == null)
-				l.ErrorCodeFunc = ctx => Options.ErrorCodeSource?.GetString(ctx);
-
-			Options.ErrorMessageSource = errorMessageSource;
-		}
-
-		protected PropertyValidator(string errorMessage) {
-			Options.ErrorMessageSource = new StaticStringSource(errorMessage);
-		}
-
-		/// <inheritdoc />
-		public virtual IEnumerable<ValidationFailure> Validate(PropertyValidatorContext context) {
-			if (IsValid(context)) return Enumerable.Empty<ValidationFailure>();
-
-			PrepareMessageFormatterForValidationError(context);
-			return new[] { CreateValidationError(context) };
-
-		}
-
-		/// <inheritdoc />
-		public virtual async Task<IEnumerable<ValidationFailure>> ValidateAsync(PropertyValidatorContext context, CancellationToken cancellation) {
-			if (await IsValidAsync(context, cancellation)) return Enumerable.Empty<ValidationFailure>();
-
-			PrepareMessageFormatterForValidationError(context);
-			return new[] {CreateValidationError(context)};
-		}
-
-		/// <inheritdoc />
-		public virtual bool ShouldValidateAsynchronously(ValidationContext context) {
-			// If the user has applied an async condition, then always go through the async path
-			// even if validator is being run synchronously.
-			if (Options.AsyncCondition != null) return true;
-			return false;
-		}
-
-		protected abstract bool IsValid(PropertyValidatorContext context);
-
-#pragma warning disable 1998
-		protected virtual async Task<bool> IsValidAsync(PropertyValidatorContext context, CancellationToken cancellation) {
-			return IsValid(context);
-		}
-#pragma warning restore 1998
+		string IPropertyValidator.GetDefaultMessageTemplate(string errorCode)
+			=> GetDefaultMessageTemplate(errorCode);
 
 		/// <summary>
-		/// Prepares the <see cref="MessageFormatter"/> of <paramref name="context"/> for an upcoming <see cref="ValidationFailure"/>.
+		/// Returns the default error message template for this validator, when not overridden.
 		/// </summary>
-		/// <param name="context">The validator context</param>
-		protected virtual void PrepareMessageFormatterForValidationError(PropertyValidatorContext context) {
-			context.MessageFormatter.AppendPropertyName(context.DisplayName);
-			context.MessageFormatter.AppendPropertyValue(context.PropertyValue);
+		/// <param name="errorCode">The currently configured error code for the validator.</param>
+		/// <returns></returns>
+		protected virtual string GetDefaultMessageTemplate(string errorCode) => "No default error message has been specified";
 
-			// If there's a collection index cached in the root context data then add it
-			// to the message formatter. This happens when a child validator is executed
-			// as part of a call to RuleForEach. Usually parameters are not flowed through to
-			// child validators, but we make an exception for collection indices.
-			if (context.ParentContext.RootContextData.TryGetValue("__FV_CollectionIndex", out var index)) {
-				// If our property validator has explicitly added a placeholder for the collection index
-				// don't overwrite it with the cached version.
-				if (!context.MessageFormatter.PlaceholderValues.ContainsKey("CollectionIndex")) {
-					context.MessageFormatter.AppendArgument("CollectionIndex", index);
-				}
-			}
+		/// <inheritdoc />
+		public abstract string Name { get; }
+
+		/// <summary>
+		/// Retrieves a localized string from the LanguageManager.
+		/// If an ErrorCode is defined for this validator, the error code is used as the key.
+		/// If no ErrorCode is defined (or the language manager doesn't have a translation for the error code)
+		/// then the fallback key is used instead.
+		/// </summary>
+		/// <param name="errorCode">The currently configured error code for the validator.</param>
+		/// <param name="fallbackKey">The fallback key to use for translation, if no ErrorCode is available.</param>
+		/// <returns>The translated error message template.</returns>
+		protected string Localized(string errorCode, string fallbackKey) {
+			return ValidatorOptions.Global.LanguageManager.ResolveErrorMessageUsingErrorCode(errorCode, fallbackKey);
 		}
 
 		/// <summary>
-		/// Creates an error validation result for this validator.
+		/// Validates a specific property value.
 		/// </summary>
-		/// <param name="context">The validator context</param>
-		/// <returns>Returns an error validation result.</returns>
-		protected virtual ValidationFailure CreateValidationError(PropertyValidatorContext context) {
-			var messageBuilderContext = new MessageBuilderContext(context, Options.ErrorMessageSource, this);
-
-			var error = context.Rule.MessageBuilder != null
-				? context.Rule.MessageBuilder(messageBuilderContext)
-				: messageBuilderContext.GetDefaultMessage();
-
-			var failure = new ValidationFailure(context.PropertyName, error, context.PropertyValue);
-			failure.FormattedMessageArguments = context.MessageFormatter.AdditionalArguments;
-			failure.FormattedMessagePlaceholderValues = context.MessageFormatter.PlaceholderValues;
-			failure.ErrorCode = (Options.ErrorCodeSource != null)
-				? Options.ErrorCodeSource.GetString(context)
-				: ValidatorOptions.ErrorCodeResolver(this);
-
-			if (Options.CustomStateProvider != null) {
-				failure.CustomState = Options.CustomStateProvider(context);
-			}
-
-			if (Options.SeverityProvider != null) {
-				failure.Severity = Options.SeverityProvider(context);
-			}
-
-			return failure;
-		}
+		/// <param name="context">The validation context. The parent object can be obtained from here.</param>
+		/// <param name="value">The current property value to validate</param>
+		/// <returns>True if valid, otherwise false.</returns>
+		public abstract bool IsValid(ValidationContext<T> context, TProperty value);
 	}
 }

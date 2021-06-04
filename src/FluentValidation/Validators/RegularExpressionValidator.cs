@@ -21,43 +21,45 @@ namespace FluentValidation.Validators {
 	using System.Text.RegularExpressions;
 	using Resources;
 
-	public class RegularExpressionValidator : PropertyValidator, IRegularExpressionValidator {
-		readonly Func<object, Regex> _regexFunc;
+	public class RegularExpressionValidator<T> : PropertyValidator<T,string>, IRegularExpressionValidator {
+		readonly Func<T, Regex> _regexFunc;
 
-		public RegularExpressionValidator(string expression) :base(new LanguageStringSource(nameof(RegularExpressionValidator))) {
+		public override string Name => "RegularExpressionValidator";
+
+		public RegularExpressionValidator(string expression) {
 			Expression = expression;
 
 			var regex = CreateRegex(expression);
 			_regexFunc = x => regex;
 		}
 
-		public RegularExpressionValidator(Regex regex) : base(new LanguageStringSource(nameof(RegularExpressionValidator))) {
+		public RegularExpressionValidator(Regex regex) {
 			Expression = regex.ToString();
 			_regexFunc = x => regex;
 		}
 
-		public RegularExpressionValidator(string expression, RegexOptions options) : base(new LanguageStringSource(nameof(RegularExpressionValidator))) {
+		public RegularExpressionValidator(string expression, RegexOptions options) {
 			Expression = expression;
 			var regex = CreateRegex(expression, options);
 			_regexFunc = x => regex;
 		}
 
-		public RegularExpressionValidator(Func<object, string> expressionFunc) : base(new LanguageStringSource(nameof(RegularExpressionValidator))) {
+		public RegularExpressionValidator(Func<T, string> expressionFunc) {
 			_regexFunc = x => CreateRegex(expressionFunc(x));
 		}
 
-		public RegularExpressionValidator(Func<object, Regex> regexFunc) : base(new LanguageStringSource(nameof(RegularExpressionValidator))) {
+		public RegularExpressionValidator(Func<T, Regex> regexFunc) {
 			_regexFunc = regexFunc;
 		}
 
-		public RegularExpressionValidator(Func<object, string> expression, RegexOptions options) : base(new LanguageStringSource(nameof(RegularExpressionValidator))) {
+		public RegularExpressionValidator(Func<T, string> expression, RegexOptions options) {
 			_regexFunc = x => CreateRegex(expression(x), options);
 		}
 
-		protected override bool IsValid(PropertyValidatorContext context) {
+		public override bool IsValid(ValidationContext<T> context, string value) {
 			var regex = _regexFunc(context.InstanceToValidate);
 
-			if (regex != null && context.PropertyValue != null && !regex.IsMatch((string) context.PropertyValue)) {
+			if (regex != null && value != null && !regex.IsMatch(value)) {
 				context.MessageFormatter.AppendArgument("RegularExpression", regex.ToString());
 				return false;
 			}
@@ -69,9 +71,12 @@ namespace FluentValidation.Validators {
 		}
 
 		public string Expression { get; }
+
+		protected override string GetDefaultMessageTemplate(string errorCode) {
+			return Localized(errorCode, Name);
+		}
 	}
 
-	[Obsolete("FluentValidation metadata interfaces are deprecated and will be removed in FluentValidation 10.")]
 	public interface IRegularExpressionValidator : IPropertyValidator {
 		string Expression { get; }
 	}

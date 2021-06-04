@@ -16,6 +16,7 @@
 // The latest version of this file can be found at https://github.com/FluentValidation/FluentValidation
 #endregion
 namespace FluentValidation.AspNetCore {
+	using System;
 	using System.Collections.Generic;
 	using Internal;
 	using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
@@ -23,7 +24,7 @@ namespace FluentValidation.AspNetCore {
 	using Validators;
 
 	internal class RequiredClientValidator : ClientValidatorBase{
-		public RequiredClientValidator(PropertyRule rule, IPropertyValidator validator) : base(rule, validator) {
+		public RequiredClientValidator(IValidationRule rule, IRuleComponent component) : base(rule, component) {
 
 		}
 
@@ -34,14 +35,15 @@ namespace FluentValidation.AspNetCore {
 
 		private string GetErrorMessage(ClientModelValidationContext context) {
 			var cfg = context.ActionContext.HttpContext.RequestServices.GetValidatorConfiguration();
-			var formatter = cfg.MessageFormatterFactory().AppendPropertyName(Rule.GetDisplayName());
+			var formatter = cfg.MessageFormatterFactory().AppendPropertyName(Rule.GetDisplayName(null));
 			string messageTemplate;
 			try {
-				messageTemplate = Validator.Options.ErrorMessageSource.GetString(null);
+				messageTemplate = Component.GetUnformattedErrorMessage();
 			}
-			catch (FluentValidationMessageFormatException) {
-				messageTemplate = cfg.LanguageManager.GetStringForValidator<NotEmptyValidator>();
+			catch (NullReferenceException) {
+				messageTemplate = cfg.LanguageManager.GetString("NotEmptyValidator");
 			}
+
 			var message = formatter.BuildMessage(messageTemplate);
 			return message;
 		}

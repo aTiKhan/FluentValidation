@@ -65,7 +65,7 @@ namespace FluentValidation.Tests {
 
 		[Fact]
 		public void Explicitly_included_properties_should_be_propagated_to_nested_validators() {
-			var results = validator.Validate(person, x => x.Address);
+			var results = validator.Validate(person, v => v.IncludeProperties(x => x.Address));
 			results.Errors.Count.ShouldEqual(2);
 			results.Errors.First().PropertyName.ShouldEqual("Address.Postcode");
 			results.Errors.Last().PropertyName.ShouldEqual("Address.Country.Name");
@@ -73,7 +73,7 @@ namespace FluentValidation.Tests {
 
 		[Fact]
 		public void Explicitly_included_properties_should_be_propagated_to_nested_validators_using_strings() {
-			var results = validator.Validate(person, "Address");
+			var results = validator.Validate(person, v => v.IncludeProperties("Address"));
 			results.Errors.Count.ShouldEqual(2);
 			results.Errors.First().PropertyName.ShouldEqual("Address.Postcode");
 			results.Errors.Last().PropertyName.ShouldEqual("Address.Country.Name");
@@ -81,7 +81,7 @@ namespace FluentValidation.Tests {
 
 		[Fact]
 		public void Chained_property_should_be_excluded() {
-			var results = validator.Validate(person, x => x.Surname);
+			var results = validator.Validate(person, v => v.IncludeProperties(x => x.Surname));
 			results.Errors.Count.ShouldEqual(0);
 		}
 
@@ -131,7 +131,7 @@ namespace FluentValidation.Tests {
 				}
 
 			});
-			result.Errors.IsValid().ShouldBeTrue();
+			result.IsValid.ShouldBeTrue();
 		}
 
 		[Fact]
@@ -178,13 +178,15 @@ namespace FluentValidation.Tests {
 
 		public class DepartmentValidator : AbstractValidator<Department> {
 			public DepartmentValidator() {
-				CascadeMode = CascadeMode.StopOnFirstFailure; ;
+#pragma warning disable 618
+				CascadeMode = CascadeMode.StopOnFirstFailure;
+#pragma warning restore 618
 				RuleFor(x => x.Manager).NotNull();
 				RuleFor(x => x.Assistant.Surname).NotEqual(x => x.Manager.Surname).When(x => x.Assistant != null && x.Manager.Surname != null);
 			}
 		}
 
-		public class PersonValidator : AbstractValidator<Person> {
+		public class PersonValidator : InlineValidator<Person> {
 			public PersonValidator() {
 				RuleFor(x => x.Forename).NotNull();
 				When(x => x.Address != null, () => {

@@ -23,12 +23,13 @@ namespace FluentValidation.Validators {
 	using FluentValidation.Internal;
 	using Resources;
 
-	public class StringEnumValidator : PropertyValidator {
+	public class StringEnumValidator<T> : PropertyValidator<T, string> {
 		private readonly Type _enumType;
-
 		private readonly bool _caseSensitive;
 
-		public StringEnumValidator(Type enumType, bool caseSensitive) : base(new LanguageStringSource(nameof(EnumValidator))) { // Default message identical to EnumValidator
+		public override string Name => "StringEnumValidator";
+
+		public StringEnumValidator(Type enumType, bool caseSensitive) {
 			if (enumType == null) throw new ArgumentNullException(nameof(enumType));
 
 			CheckTypeIsEnum(enumType);
@@ -37,20 +38,22 @@ namespace FluentValidation.Validators {
 			_caseSensitive = caseSensitive;
 		}
 
-		protected override bool IsValid(PropertyValidatorContext context) {
-			if (context.PropertyValue == null) return true;
-
-			string value = context.PropertyValue.ToString();
+		public override bool IsValid(ValidationContext<T> context, string value) {
+			if (value == null) return true;
 			var comparison = _caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-
 			return Enum.GetNames(_enumType).Any(n => n.Equals(value, comparison));
 		}
 
 		private void CheckTypeIsEnum(Type enumType) {
-			if (!enumType.GetTypeInfo().IsEnum) {
+			if (!enumType.IsEnum) {
 				string message = $"The type '{enumType.Name}' is not an enum and can't be used with IsEnumName.";
 				throw new ArgumentOutOfRangeException(nameof(enumType), message);
 			}
+		}
+
+		protected override string GetDefaultMessageTemplate(string errorCode) {
+			// Intentionally the same message as EnumValidator.
+			return Localized(errorCode, "EnumValidator");
 		}
 	}
 }

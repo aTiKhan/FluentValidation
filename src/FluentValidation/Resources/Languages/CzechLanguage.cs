@@ -1,4 +1,5 @@
 #region License
+
 // Copyright (c) .NET Foundation and contributors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,45 +15,48 @@
 // limitations under the License.
 //
 // The latest version of this file can be found at https://github.com/FluentValidation/FluentValidation
+
 #endregion
+
+#pragma warning disable 618
 
 namespace FluentValidation.Resources {
 	using Validators;
 
-	internal class CzechLanguage : Language {
+	internal class CzechLanguage {
 		public const string Culture = "cs";
-		public override string Name => Culture;
 
-		public CzechLanguage() {
-			Translate<EmailValidator>("Pole '{PropertyName}' musí obsahovat platnou emailovou adresu.");
-			Translate<GreaterThanOrEqualValidator>("Hodnota pole '{PropertyName}' musí být větší nebo rovna '{ComparisonValue}'.");
-			Translate<GreaterThanValidator>("Hodnota pole '{PropertyName}' musí být větší než '{ComparisonValue}'.");
-			Translate<LengthValidator>("Délka pole '{PropertyName}' musí být v rozsahu {MinLength} až {MaxLength} znaků. Vámi zadaná délka je {TotalLength} znaků.");
-			Translate<MinimumLengthValidator>("Délka pole '{PropertyName}' musí být větší nebo rovna {MinLength} znakům. Vámi zadaná délka je {TotalLength} znaků.");
-			Translate<MaximumLengthValidator>("Délka pole '{PropertyName}' musí být menší nebo rovna {MaxLength} znakům. Vámi zadaná délka je {TotalLength} znaků.");
-			Translate<LessThanOrEqualValidator>("Hodnota pole '{PropertyName}' musí být menší nebo rovna '{ComparisonValue}'.");
-			Translate<LessThanValidator>("Hodnota pole '{PropertyName}' musí být menší než '{ComparisonValue}'.");
-			Translate<NotEmptyValidator>("Pole '{PropertyName}' nesmí být prázdné.");
-			Translate<NotEqualValidator>("Pole '{PropertyName}' nesmí být rovno '{ComparisonValue}'.");
-			Translate<NotNullValidator>("Pole '{PropertyName}' nesmí být prázdné.");
-			Translate<PredicateValidator>("Nebyla splněna podmínka pro pole '{PropertyName}'.");
-			Translate<AsyncPredicateValidator>("Nebyla splněna podmínka pro pole '{PropertyName}'.");
-			Translate<RegularExpressionValidator>("Pole '{PropertyName}' nemá správný formát.");
-			Translate<EqualValidator>("Hodnota pole '{PropertyName}' musí být rovna '{ComparisonValue}'.");
-			Translate<ExactLengthValidator>("Délka pole '{PropertyName}' musí být {MaxLength} znaků. Vámi zadaná délka je {TotalLength} znaků.");
-			Translate<InclusiveBetweenValidator>("Hodnota pole '{PropertyName}' musí být mezi {From} a {To} (včetně). Vámi zadaná hodnota je {Value}.");
-			Translate<ExclusiveBetweenValidator>("Hodnota pole '{PropertyName}' musí být větší než {From} a menší než {To}. Vámi zadaná hodnota je {Value}.");
-			Translate<CreditCardValidator>("Pole '{PropertyName}' musí obsahovat platné číslo platební karty.");
-			Translate<ScalePrecisionValidator>("Pole '{PropertyName}' nesmí mít víc než {ExpectedPrecision} číslic a {ExpectedScale} desetinných míst. Vámi bylo zadáno {Digits} číslic a {ActualScale} desetinných míst.");
-			Translate<EmptyValidator>("Pole '{PropertyName}' musí být prázdné.");
-			Translate<NullValidator>("Pole '{PropertyName}' musí být prázdné.");
-			Translate<EnumValidator>("Pole '{PropertyName}' má rozsah hodnot, které neobsahují '{PropertyValue}'.");
+		public static string GetTranslation(string key) => key switch {
+			"EmailValidator" => "Pole '{PropertyName}' musí obsahovat platnou emailovou adresu.",
+			"GreaterThanOrEqualValidator" => "Hodnota pole '{PropertyName}' musí být větší nebo rovna '{ComparisonValue}'.",
+			"GreaterThanValidator" => "Hodnota pole '{PropertyName}' musí být větší než '{ComparisonValue}'.",
+			"LengthValidator" => "Délka pole '{PropertyName}' musí být v rozsahu {MinLength} až {MaxLength} znaků. Vámi zadaná délka je {TotalLength} znaků.",
+			"MinimumLengthValidator" => "Délka pole '{PropertyName}' musí být větší nebo rovna {MinLength} znakům. Vámi zadaná délka je {TotalLength} znaků.",
+			"MaximumLengthValidator" => "Délka pole '{PropertyName}' musí být menší nebo rovna {MaxLength} znakům. Vámi zadaná délka je {TotalLength} znaků.",
+			"LessThanOrEqualValidator" => "Hodnota pole '{PropertyName}' musí být menší nebo rovna '{ComparisonValue}'.",
+			"LessThanValidator" => "Hodnota pole '{PropertyName}' musí být menší než '{ComparisonValue}'.",
+			"NotEmptyValidator" => "Pole '{PropertyName}' nesmí být prázdné.",
+			"NotEqualValidator" => "Pole '{PropertyName}' nesmí být rovno '{ComparisonValue}'.",
+			"NotNullValidator" => "Pole '{PropertyName}' nesmí být prázdné.",
+			"PredicateValidator" => "Nebyla splněna podmínka pro pole '{PropertyName}'.",
+			"AsyncPredicateValidator" => "Nebyla splněna podmínka pro pole '{PropertyName}'.",
+			"RegularExpressionValidator" => "Pole '{PropertyName}' nemá správný formát.",
+			"EqualValidator" => "Hodnota pole '{PropertyName}' musí být rovna '{ComparisonValue}'.",
+			"ExactLengthValidator" => "Délka pole '{PropertyName}' musí být {MaxLength} znaků. Vámi zadaná délka je {TotalLength} znaků.",
+			"InclusiveBetweenValidator" => "Hodnota pole '{PropertyName}' musí být mezi {From} a {To} (včetně). Vámi zadaná hodnota je {PropertyValue}.",
+			"ExclusiveBetweenValidator" => "Hodnota pole '{PropertyName}' musí být větší než {From} a menší než {To}. Vámi zadaná hodnota je {PropertyValue}.",
+			"CreditCardValidator" => "Pole '{PropertyName}' musí obsahovat platné číslo platební karty.",
+			"ScalePrecisionValidator" => "Pole '{PropertyName}' nesmí mít víc než {ExpectedPrecision} číslic a {ExpectedScale} desetinných míst. Vámi bylo zadáno {Digits} číslic a {ActualScale} desetinných míst.",
+			"EmptyValidator" => "Pole '{PropertyName}' musí být prázdné.",
+			"NullValidator" => "Pole '{PropertyName}' musí být prázdné.",
+			"EnumValidator" => "Pole '{PropertyName}' má rozsah hodnot, které neobsahují '{PropertyValue}'.",
 			// Additional fallback messages used by clientside validation integration.
-			Translate("Length_Simple", "Délka pole '{PropertyName}' musí být v rozsahu {MinLength} až {MaxLength} znaků.");
-			Translate("MinimumLength_Simple", "Délka pole '{PropertyName}' musí být větší nebo rovna {MinLength} znakům.");
-			Translate("MaximumLength_Simple", "Délka pole '{PropertyName}' musí být menší nebo rovna {MaxLength} znakům.");
-			Translate("ExactLength_Simple", "Délka pole '{PropertyName}' musí být {MaxLength} znaků.");
-			Translate("InclusiveBetween_Simple", "Hodnota pole '{PropertyName}' musí být mezi {From} a {To} (včetně).");
-		}
+			"Length_Simple" => "Délka pole '{PropertyName}' musí být v rozsahu {MinLength} až {MaxLength} znaků.",
+			"MinimumLength_Simple" => "Délka pole '{PropertyName}' musí být větší nebo rovna {MinLength} znakům.",
+			"MaximumLength_Simple" => "Délka pole '{PropertyName}' musí být menší nebo rovna {MaxLength} znakům.",
+			"ExactLength_Simple" => "Délka pole '{PropertyName}' musí být {MaxLength} znaků.",
+			"InclusiveBetween_Simple" => "Hodnota pole '{PropertyName}' musí být mezi {From} a {To} (včetně).",
+			_ => null,
+		};
 	}
 }

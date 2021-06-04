@@ -20,6 +20,7 @@ using FluentValidation.Internal;
 
 namespace FluentValidation {
 	using System;
+	using System.Collections.Generic;
 	using Microsoft.Extensions.DependencyInjection;
 	using Validators;
 
@@ -34,31 +35,23 @@ namespace FluentValidation {
 		/// <param name="context"></param>
 		/// <returns></returns>
 		/// <exception cref="InvalidOperationException"></exception>
-		public static IServiceProvider GetServiceProvider(this IValidationContext context) {
-			ValidationContext actualContext = null;
+		public static IServiceProvider GetServiceProvider(this IValidationContext context)
+			=> Get(context.RootContextData);
 
-			switch (context) {
-				case CustomContext cc:
-					actualContext = cc.ParentContext;
-					break;
-				case MessageBuilderContext mbc:
-					actualContext = mbc.ParentContext;
-					break;
-				case PropertyValidatorContext pvc:
-					actualContext = pvc.ParentContext;
-					break;
-				case ValidationContext vc:
-					actualContext = vc;
-					break;
-			}
+		/// <summary>
+		/// Gets the service provider associated with the validation context.
+		/// </summary>
+		/// <param name="context"></param>
+		/// <returns></returns>
+		/// <exception cref="InvalidOperationException"></exception>
+		public static IServiceProvider GetServiceProvider<T,TProperty>(this MessageBuilderContext<T,TProperty> context)
+			=> Get(context.ParentContext.RootContextData);
 
-			if (actualContext != null) {
-				if (actualContext.RootContextData.TryGetValue("_FV_ServiceProvider", out var sp)) {
-					if (sp is IServiceProvider serviceProvider) {
-						return serviceProvider;
-					}
+		private static IServiceProvider Get(IDictionary<string, object> rootContextData) {
+			if (rootContextData.TryGetValue("_FV_ServiceProvider", out var sp)) {
+				if (sp is IServiceProvider serviceProvider) {
+					return serviceProvider;
 				}
-
 			}
 
 			throw new InvalidOperationException("The service provider has not been configured to work with FluentValidation. Making use of InjectValidator or GetServiceProvider is only supported when using the automatic MVC integration.");
@@ -69,7 +62,7 @@ namespace FluentValidation {
 		/// </summary>
 		/// <param name="context"></param>
 		/// <param name="serviceProvider"></param>
-		public static void SetServiceProvider(this ValidationContext context, IServiceProvider serviceProvider) {
+		public static void SetServiceProvider(this IValidationContext context, IServiceProvider serviceProvider) {
 			context.RootContextData["_FV_ServiceProvider"] = serviceProvider;
 		}
 
@@ -95,17 +88,14 @@ namespace FluentValidation {
 		/// <typeparam name="TProperty"></typeparam>
 		/// <returns></returns>
 		public static IRuleBuilderOptions<T, TProperty> InjectValidator<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Func<IServiceProvider, ValidationContext<T>, IValidator<TProperty>> callback, params string[] ruleSets) {
-			var adaptor = new ChildValidatorAdaptor(context => {
-				var actualContext = (PropertyValidatorContext) context;
-				var serviceProvider = actualContext.ParentContext.GetServiceProvider();
-				var contextToUse = ValidationContext<T>.GetFromNonGenericContext(actualContext.ParentContext);
-				var validator = callback(serviceProvider, contextToUse);
+			var adaptor = new ChildValidatorAdaptor<T,TProperty>((context, _) => {
+				var serviceProvider = context.GetServiceProvider();
+				var validator = callback(serviceProvider, context);
 				return validator;
 			}, typeof(IValidator<TProperty>));
 
 			adaptor.RuleSets = ruleSets;
-
-			return ruleBuilder.SetValidator(adaptor);
+			return ruleBuilder.SetAsyncValidator(adaptor);
 		}
 	}
 }

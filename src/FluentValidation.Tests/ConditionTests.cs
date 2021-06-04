@@ -15,8 +15,10 @@
 //
 // The latest version of this file can be found at https://github.com/FluentValidation/FluentValidation
 #endregion
+#pragma warning disable 1998
 
 namespace FluentValidation.Tests {
+	using System.Collections.Generic;
 	using System.Threading.Tasks;
 	using Xunit;
 
@@ -141,6 +143,72 @@ namespace FluentValidation.Tests {
 			result.Errors.Count.ShouldEqual(1);
 		}
 
+		[Fact]
+		public void Async_condition_executed_synchronosuly_with_synchronous_role() {
+			var validator = new TestValidator();
+			validator.RuleFor(x => x.Surname).NotNull()
+				.WhenAsync((x, token) => Task.FromResult(false));
+			var result = validator.Validate(new Person());
+			result.IsValid.ShouldBeTrue();
+		}
+
+		[Fact]
+		public void Async_condition_executed_synchronosuly_with_asynchronous_rule() {
+			var validator = new TestValidator();
+			validator.RuleFor(x => x.Surname)
+				.MustAsync((surname, c) => Task.FromResult(surname != null))
+				.WhenAsync((x, token) => Task.FromResult(false));
+			var result = validator.Validate(new Person());
+			result.IsValid.ShouldBeTrue();
+		}
+
+		[Fact]
+		public void Async_condition_executed_synchronosuly_with_synchronous_collection_role() {
+			var validator = new TestValidator();
+			validator.RuleForEach(x => x.NickNames).NotNull()
+				.WhenAsync((x, token) => Task.FromResult(false));
+			var result = validator.Validate(new Person { NickNames = new string[0] });
+			result.IsValid.ShouldBeTrue();
+		}
+
+		[Fact]
+		public void Async_condition_executed_synchronosuly_with_asynchronous_collection_rule() {
+			var validator = new TestValidator();
+			validator.RuleForEach(x => x.NickNames)
+				.MustAsync((n, c) => Task.FromResult(n != null))
+				.WhenAsync((x, token) => Task.FromResult(false));
+			var result = validator.Validate(new Person { NickNames = new string[0]});
+			result.IsValid.ShouldBeTrue();
+		}
+
+		[Fact]
+		public void Can_access_property_value_in_custom_condition() {
+			var validator = new TestValidator();
+			validator.RuleFor(x => x.Surname).Must(v => false).Configure(cfg => {
+				cfg.ApplyCondition(context => cfg.GetPropertyValue(context.InstanceToValidate) != null);
+			});
+
+			var result = validator.Validate(new Person());
+			result.IsValid.ShouldBeTrue();
+
+			result = validator.Validate(new Person {Surname = "foo"});
+			result.IsValid.ShouldBeFalse();
+		}
+
+		[Fact]
+		public void Can_access_property_value_in_custom_condition_foreach() {
+			var validator = new TestValidator();
+			validator.RuleForEach(x => x.Orders).Must(v => false).Configure(cfg => {
+				cfg.ApplyCondition(context => cfg.GetPropertyValue(context.InstanceToValidate) != null);
+			});
+
+			var result = validator.Validate(new Person());
+			result.IsValid.ShouldBeTrue();
+
+			result = validator.Validate(new Person { Orders = new List<Order> { new Order() }});
+			result.IsValid.ShouldBeFalse();
+		}
+
 		private class TestConditionValidator : AbstractValidator<Person> {
 			public TestConditionValidator() {
 				RuleFor(x => x.Forename).NotNull().When(x => x.Id == 0);
@@ -165,4 +233,5 @@ namespace FluentValidation.Tests {
 			}
 		}
 	}
+
 }

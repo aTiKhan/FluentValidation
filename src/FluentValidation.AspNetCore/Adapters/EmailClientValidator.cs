@@ -16,6 +16,7 @@
 // The latest version of this file can be found at https://github.com/FluentValidation/FluentValidation
 #endregion
 namespace FluentValidation.AspNetCore {
+	using System;
 	using System.Collections.Generic;
 	using Internal;
 	using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
@@ -24,19 +25,19 @@ namespace FluentValidation.AspNetCore {
 
 	internal class EmailClientValidator : ClientValidatorBase {
 
-		public EmailClientValidator(PropertyRule rule, IPropertyValidator validator) : base(rule, validator) {
+		public EmailClientValidator(IValidationRule rule, IRuleComponent component) : base(rule, component) {
 		}
 
 		public override void AddValidation(ClientModelValidationContext context) {
 			var cfg = context.ActionContext.HttpContext.RequestServices.GetValidatorConfiguration();
-			var formatter = cfg.MessageFormatterFactory().AppendPropertyName(Rule.GetDisplayName());
+			var formatter = cfg.MessageFormatterFactory().AppendPropertyName(Rule.GetDisplayName(null));
 
 			string messageTemplate;
 			try {
-				messageTemplate = Validator.Options.ErrorMessageSource.GetString(null);
+				messageTemplate = Component.GetUnformattedErrorMessage();
 			}
-			catch (FluentValidationMessageFormatException) {
-				messageTemplate = cfg.LanguageManager.GetStringForValidator<EmailValidator>();
+			catch (NullReferenceException) {
+				messageTemplate = cfg.LanguageManager.GetString("EmailValidator");
 			}
 
 			string message = formatter.BuildMessage(messageTemplate);

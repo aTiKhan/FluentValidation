@@ -36,7 +36,7 @@ namespace FluentValidation.Tests {
 				v => v.RuleFor(x => x.SomeProperty).NotNull()
 			};
 
-			var result = validator.Validate(new TestObject(), "SomeProperty");
+			var result = validator.Validate(new TestObject(), v => v.IncludeProperties("SomeProperty"));
 			result.Errors.Count.ShouldEqual(1);
 		}
 
@@ -46,7 +46,7 @@ namespace FluentValidation.Tests {
 				v => v.RuleFor(x => x.SomeOtherProperty).NotNull()
 			};
 
-			var result = validator.Validate(new TestObject(), "SomeProperty");
+			var result = validator.Validate(new TestObject(),v => v.IncludeProperties("SomeProperty"));
 			result.Errors.Count.ShouldEqual(0);
 		}
 
@@ -56,7 +56,7 @@ namespace FluentValidation.Tests {
 				v => v.RuleFor(x => x.SomeProperty).NotNull()
 			};
 
-			var result = validator.Validate(new TestObject(), x => x.SomeProperty);
+			var result = validator.Validate(new TestObject(), v => v.IncludeProperties(x => x.SomeProperty));
 			result.Errors.Count.ShouldEqual(1);
 		}
 
@@ -66,7 +66,7 @@ namespace FluentValidation.Tests {
 				v => v.RuleFor(x => x.SomeOtherProperty).NotNull()
 			};
 
-			var result = validator.Validate(new TestObject(), x => x.SomeProperty);
+			var result = validator.Validate(new TestObject(), v => v.IncludeProperties(x => x.SomeProperty));
 			result.Errors.Count.ShouldEqual(0);
 		}
 
@@ -80,7 +80,8 @@ namespace FluentValidation.Tests {
 				.OverridePropertyName("SomeNullableProperty")
 			};
 
-			var result = validator.Validate(new TestObject { SomeNullableProperty = 0 }, x => x.SomeNullableProperty);
+			var result = validator.Validate(new TestObject { SomeNullableProperty = 0 },
+				v => v.IncludeProperties(x => x.SomeNullableProperty));
 			result.Errors.Count.ShouldEqual(1);
 		}
 
@@ -91,7 +92,7 @@ namespace FluentValidation.Tests {
 				v => v.RuleFor(x => x.Address.Id).NotEqual(0)
 			};
 
-			var result = validator.Validate(new Person { Address = new Address() }, "Address.Id");
+			var result = validator.Validate(new Person { Address = new Address() }, v => v.IncludeProperties("Address.Id"));
 			result.Errors.Count.ShouldEqual(1);
 			result.Errors[0].PropertyName.ShouldEqual("Address.Id");
 		}
@@ -103,7 +104,7 @@ namespace FluentValidation.Tests {
 				v => v.RuleFor(x => x.Address.Id).NotEqual(0)
 			};
 
-			var result = validator.Validate(new Person { Address = new Address() }, x => x.Address.Id);
+			var result = validator.Validate(new Person { Address = new Address() }, v => v.IncludeProperties(x => x.Address.Id));
 			result.Errors.Count.ShouldEqual(1);
 			result.Errors[0].PropertyName.ShouldEqual("Address.Id");
 
@@ -116,7 +117,7 @@ namespace FluentValidation.Tests {
 			validator2.RuleFor(x => x.Forename).NotNull();
 			validator.Include(validator2);
 
-			var result = validator.Validate(new Person(), "Forename");
+			var result = validator.Validate(new Person(), v => v.IncludeProperties("Forename"));
 			result.IsValid.ShouldBeFalse();
 		}
 
@@ -128,7 +129,7 @@ namespace FluentValidation.Tests {
 			validator2.RuleFor(x => x.Surname).NotNull();
 			validator.Include(validator2);
 
-			var result = validator.Validate(new Person(), "Forename");
+			var result = validator.Validate(new Person(), v => v.IncludeProperties("Forename"));
 			result.Errors.Count.ShouldEqual(1);
 			result.Errors[0].PropertyName.ShouldEqual("Forename");
 		}
@@ -141,15 +142,9 @@ namespace FluentValidation.Tests {
 			validator2.RuleFor(x => x.Surname).NotNull();
 			validator.Include(validator2);
 
-			var result = await validator.ValidateAsync(new Person(), default, "Forename");
+			var result = await validator.ValidateAsync(new Person(), v => v.IncludeProperties("Forename"));
 			result.Errors.Count.ShouldEqual(1);
 			result.Errors[0].PropertyName.ShouldEqual("Forename");
-		}
-
-		private PropertyRule CreateRule(Expression<Func<TestObject, object>> expression) {
-			var rule = PropertyRule.Create(expression);
-			rule.AddValidator(new NotNullValidator());
-			return rule;
 		}
 
 		private class TestObject {

@@ -30,8 +30,8 @@ namespace FluentValidation.Tests {
 
 	public class NotEqualValidatorTests {
 		public  NotEqualValidatorTests() {
-          CultureScope.SetDefaultCulture();
-        }
+			CultureScope.SetDefaultCulture();
+		}
 
 		[Fact]
 		public void When_the_objects_are_equal_then_the_validator_should_fail() {
@@ -57,20 +57,43 @@ namespace FluentValidation.Tests {
 		[Fact]
 		public void Validates_across_properties() {
 			var validator = new TestValidator(
-				v => v.RuleFor(x => x.Forename).NotEqual(x => x.Surname)
+				v => v.RuleFor(x => x.Forename)
+					.NotEqual(x => x.Surname)
+					.WithMessage("{ComparisonProperty}")
 			);
 
 			var result = validator.Validate(new Person { Surname = "foo", Forename = "foo" });
 			result.IsValid.ShouldBeFalse();
+			result.Errors[0].ErrorMessage.ShouldEqual("Surname");
 		}
 
+		[Fact]
+		public void Comparison_property_uses_custom_resolver() {
+			var originalResolver = ValidatorOptions.Global.DisplayNameResolver;
+
+			try {
+				ValidatorOptions.Global.DisplayNameResolver = (type, member, expr) => member.Name + "Foo";
+				var validator = new TestValidator(
+					v => v.RuleFor(x => x.Forename)
+						.NotEqual(x => x.Surname)
+						.WithMessage("{ComparisonProperty}")
+				);
+
+				var result = validator.Validate(new Person { Surname = "foo", Forename = "foo" });
+				result.Errors[0].ErrorMessage.ShouldEqual("SurnameFoo");
+			}
+			finally {
+				ValidatorOptions.Global.DisplayNameResolver = originalResolver;
+			}
+		}
 
 		[Fact]
 		public void Should_store_property_to_compare() {
 			var validator = new TestValidator(v => v.RuleFor(x => x.Forename).NotEqual(x => x.Surname));
 			var propertyValidator = validator.CreateDescriptor()
 				.GetValidatorsForMember("Forename")
-				.OfType<NotEqualValidator>()
+				.Select(x => x.Validator)
+				.OfType<NotEqualValidator<Person,string>>()
 				.Single();
 
 			propertyValidator.MemberToCompare.ShouldEqual(typeof(Person).GetProperty("Surname"));
@@ -81,7 +104,8 @@ namespace FluentValidation.Tests {
 			var validator = new TestValidator(v => v.RuleFor(x => x.Forename).NotEqual(x => x.Surname));
 			var propertyValidator = validator.CreateDescriptor()
 				.GetValidatorsForMember("Forename")
-				.OfType<NotEqualValidator>()
+				.Select(x => x.Validator)
+				.OfType<NotEqualValidator<Person,string>>()
 				.Single();
 			propertyValidator.Comparison.ShouldEqual(Comparison.NotEqual);
 		}
@@ -117,30 +141,24 @@ namespace FluentValidation.Tests {
 			result.IsValid.ShouldBeTrue();
 		}
 
-		public class MyType
-		{
+		public class MyType {
 			public MyValueType Value { get; set; }
 		}
 
-		public class MyTypeValidator : AbstractValidator<MyType>
-		{
-			public MyTypeValidator()
-			{
+		public class MyTypeValidator : AbstractValidator<MyType> {
+			public MyTypeValidator() {
 				RuleFor(myType => myType.Value).NotEqual(MyValueType.None);
 			}
 		}
 
-		public struct MyValueType
-		{
+		public struct MyValueType {
 			public static readonly MyValueType None = default;
 
-			public MyValueType(int value)
-			{
+			public MyValueType(int value) {
 				_value = value;
 			}
 
-			public int Value
-			{
+			public int Value {
 				get { return _value ?? -1; }
 			}
 
@@ -154,8 +172,7 @@ namespace FluentValidation.Tests {
 				return _value == null ? null : _value.Value.ToString();
 			}
 
-			public override bool Equals(object obj)
-			{
+			public override bool Equals(object obj) {
 				if (obj == null || obj.GetType() != typeof(MyValueType))
 					return false;
 

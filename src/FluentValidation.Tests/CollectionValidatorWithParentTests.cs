@@ -116,7 +116,7 @@ namespace FluentValidation.Tests {
 				v => v.RuleForEach(x => x.Orders).SetValidator(y => new OrderValidator(y))
 			};
 
-			var results = validator.Validate(person, x => x.Orders);
+			var results = validator.Validate(person, v => v.IncludeProperties(x => x.Orders));
 			results.Errors.Count.ShouldEqual(2);
 		}
 
@@ -127,7 +127,7 @@ namespace FluentValidation.Tests {
 				v => v.RuleForEach(x => x.Orders).SetValidator(y => new OrderValidator(y))
 			};
 
-			var results = validator.Validate(person, "Orders");
+			var results = validator.Validate(person, v => v.IncludeProperties("Orders"));
 			results.Errors.Count.ShouldEqual(2);
 		}
 
@@ -138,7 +138,7 @@ namespace FluentValidation.Tests {
 				v => v.RuleForEach(x => x.Orders).SetValidator(y => new OrderValidator(y))
 			};
 
-			var results = validator.Validate(person, x => x.Forename);
+			var results = validator.Validate(person, v => v.IncludeProperties(x => x.Forename));
 			results.Errors.Count.ShouldEqual(0);
 		}
 
@@ -155,7 +155,7 @@ namespace FluentValidation.Tests {
 		[Fact]
 		public async Task Async_condition_should_work_with_child_collection() {
 			var validator = new TestValidator() {
-				v => v.RuleForEach(x => x.Orders).SetValidator(y => new OrderValidator(y)).WhenAsync(async (x, c) => x.Orders.Count == 4 /*there are only 3*/)
+				v => v.RuleForEach(x => x.Orders).SetValidator(y => new OrderValidator(y)).WhenAsync((x, c) => Task.FromResult(x.Orders.Count == 4) /*there are only 3*/)
 			};
 
 			var result = await validator.ValidateAsync(person);
@@ -279,7 +279,7 @@ namespace FluentValidation.Tests {
 			}
 
 			private Func<string, CancellationToken, Task<bool>> BeOneOfTheChildrensEmailAddress(Person person) {
-				return async (productName, cancel) => person.Children.Any(child => child.Email == productName);
+				return (productName, cancel) => Task.FromResult(person.Children.Any(child => child.Email == productName));
 			}
 		}
 	}

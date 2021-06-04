@@ -1,4 +1,5 @@
-﻿namespace FluentValidation.Tests.AspNetCore.Controllers {
+namespace FluentValidation.Tests.AspNetCore.Controllers {
+	using System;
 	using System.Collections.Generic;
 	using FluentValidation.AspNetCore;
 	using Microsoft.AspNetCore.Mvc;
@@ -120,6 +121,14 @@
 		}
 
 		public ActionResult ImplicitChildValidatorWithNullChild(ParentModel5 model) {
+			return TestResult();
+		}
+
+		public ActionResult ImplicitRootCollectionElementValidator([FromBody] IEnumerable<ChildModel> model) {
+			return TestResult();
+		}
+
+		public ActionResult ImplicitRootCollectionElementValidationEnabled(ParentModel model) {
 			return TestResult();
 		}
 

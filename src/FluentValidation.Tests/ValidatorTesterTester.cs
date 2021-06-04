@@ -35,6 +35,7 @@ namespace FluentValidation.Tests {
 			validator.RuleFor(x => x.CreditCard).Must(creditCard => !string.IsNullOrEmpty(creditCard)).WhenAsync((x, cancel) => Task.Run(() => { return x.Age >= 18; }));
 			validator.RuleFor(x => x.Forename).NotNull();
 			validator.RuleForEach(person => person.NickNames).MinimumLength(5);
+			CultureScope.SetDefaultCulture();
 		}
 
 		[Fact]
@@ -97,7 +98,7 @@ namespace FluentValidation.Tests {
 
 		[Fact]
 		public void ShouldHaveValidationError_Should_throw_when_there_are_no_validation_errors() {
-			typeof(ValidationTestException).ShouldBeThrownBy(() => validator.ShouldHaveValidationErrorFor(x => x.Forename, "test"));
+			Assert.Throws<ValidationTestException>(() => validator.ShouldHaveValidationErrorFor(x => x.Forename, "test"));
 		}
 
 		[Fact]
@@ -107,7 +108,7 @@ namespace FluentValidation.Tests {
 
 		[Fact]
 		public void ShouldNotHaveValidationError_should_throw_when_there_are_errors() {
-			typeof(ValidationTestException).ShouldBeThrownBy(() => validator.ShouldNotHaveValidationErrorFor(x => x.Forename, (string) null));
+			Assert.Throws<ValidationTestException>(() => validator.ShouldNotHaveValidationErrorFor(x => x.Forename, (string) null));
 		}
 
 		[Fact]
@@ -117,7 +118,7 @@ namespace FluentValidation.Tests {
 
 		[Fact]
 		public void ShouldHaveValidationError_should_throw_when_there_are_no_validation_errors_with_preconstructed_object() {
-			typeof(ValidationTestException).ShouldBeThrownBy(() => validator.ShouldHaveValidationErrorFor(x => x.Forename, new Person {Forename = "test"}));
+			Assert.Throws<ValidationTestException>(() => validator.ShouldHaveValidationErrorFor(x => x.Forename, new Person {Forename = "test"}));
 		}
 
 		[Fact]
@@ -127,13 +128,13 @@ namespace FluentValidation.Tests {
 
 		[Fact]
 		public void ShouldNotHaveValidationError_should_throw_when_there_are_errors_with_preconstructed_object() {
-			typeof(ValidationTestException).ShouldBeThrownBy(() => validator.ShouldNotHaveValidationErrorFor(x => x.Forename, new Person {Forename = null}));
+			Assert.Throws<ValidationTestException>(() => validator.ShouldNotHaveValidationErrorFor(x => x.Forename, new Person {Forename = null}));
 		}
 
 
 		[Fact]
 		public void ShouldHaveChildValidator_throws_when_property_does_not_have_child_validator() {
-			var ex = typeof(ValidationTestException).ShouldBeThrownBy(() =>
+			var ex = Assert.Throws<ValidationTestException>(() =>
 				validator.ShouldHaveChildValidator(x => x.Address, typeof(AddressValidator))
 			);
 
@@ -155,7 +156,7 @@ namespace FluentValidation.Tests {
 
 		[Fact]
 		public void ShouldHaveChildvalidator_throws_when_collection_property_Does_not_have_child_validator() {
-			var ex = typeof(ValidationTestException).ShouldBeThrownBy(() =>
+			var ex = Assert.Throws<ValidationTestException>(() =>
 				validator.ShouldHaveChildValidator(x => x.Orders, typeof(OrderValidator))
 			);
 
@@ -165,7 +166,7 @@ namespace FluentValidation.Tests {
 		[Fact]
 		public void ShouldHaveChildValidator_should_throw_when_property_has_a_different_child_validator() {
 			validator.RuleFor(x => x.Address).SetValidator(new AddressValidator());
-			var ex = typeof(ValidationTestException).ShouldBeThrownBy(() =>
+			var ex = Assert.Throws<ValidationTestException>(() =>
 				validator.ShouldHaveChildValidator(x => x.Address, typeof(OrderValidator))
 			);
 
@@ -205,7 +206,9 @@ namespace FluentValidation.Tests {
 			});
 			testValidator.RuleFor(x => x.Id).NotEqual(0);
 
+#pragma warning disable 618
 			var assertionRoot = testValidator.TestValidate(new Person(), "Names");
+#pragma warning restore 618
 
 			assertionRoot.ShouldHaveValidationErrorFor(x => x.Forename)
 				.WithErrorCode("NotNullValidator");
@@ -431,6 +434,40 @@ namespace FluentValidation.Tests {
 			}
 
 			exceptionCaught.ShouldBeTrue();
+		}
+
+		[Fact]
+		public void Test_custom_state_with_concatenated_string() {
+			var validator = new InlineValidator<Person>();
+			validator.RuleFor(x => x.Surname).NotNull().WithState(x => "Test" + 123);
+			var result = validator.TestValidate(new Person());
+
+			// String concatenated with integer means a different string reference is created:
+			/*
+				object s1 = "Test" + 123.ToString();
+				object s2 = "Test123";
+				bool check1 = s1 == s2; // False
+			 */
+			// Test to ensure that this scenario is handled properly.
+			result.ShouldHaveValidationErrorFor(x => x.Surname)
+				.WithCustomState("Test123");
+		}
+
+		[Fact]
+		public void Custom_state_comparer_check() {
+			var validator = new InlineValidator<Person>();
+			validator.RuleFor(x => x.Surname).NotNull().WithState(x => "Test" + 123);
+			var result = validator.TestValidate(new Person());
+
+			// Throws without comparer.
+			Assert.Throws<ValidationTestException>(() => {
+				result.ShouldHaveValidationErrorFor(x => x.Surname)
+					.WithCustomState("test123");
+			});
+
+			// Doesn't throw with comparer.
+			result.ShouldHaveValidationErrorFor(x => x.Surname)
+				.WithCustomState("test123", StringComparer.OrdinalIgnoreCase);
 		}
 
 		[Fact]
@@ -666,6 +703,88 @@ namespace FluentValidation.Tests {
 			result.ShouldNotHaveValidationErrorFor("Orders[0].ProductName");
 		}
 
+		[Fact]
+		public async Task TestValidate_runs_async() {
+			var validator = new InlineValidator<Person>();
+			validator.RuleFor(x => x.Surname).MustAsync((x, ct) => Task.FromResult(false));
+			var result = await validator.TestValidateAsync(new Person());
+			result.ShouldHaveValidationErrorFor(x => x.Surname);
+		}
+
+		[Fact]
+		public async Task TestValidate_runs_async_throws() {
+			var validator = new InlineValidator<Person>();
+			validator.RuleFor(x => x.Surname).MustAsync((x, ct) => Task.FromResult(false));
+			var result = await validator.TestValidateAsync(new Person());
+			Assert.Throws<ValidationTestException>(() => {
+				result.ShouldNotHaveValidationErrorFor(x => x.Surname);
+			});
+		}
+
+		[Fact]
+		public async Task ShouldHaveValidationError_async() {
+			var validator = new InlineValidator<Person>();
+			validator.RuleFor(x => x.Surname).MustAsync((x, ct) => Task.FromResult(false));
+			await validator.ShouldHaveValidationErrorForAsync(x => x.Surname, null as string);
+		}
+
+		[Fact]
+		public async Task ShouldHaveValidationError_async_throws() {
+			var validator = new InlineValidator<Person>();
+			validator.RuleFor(x => x.Surname).MustAsync((x, ct) => Task.FromResult(true));
+			await Assert.ThrowsAsync<ValidationTestException>(async () => {
+				await validator.ShouldHaveValidationErrorForAsync(x => x.Surname, null as string);
+			});
+		}
+
+		[Fact]
+		public async Task ShouldNotHaveValidationError_async() {
+			var validator = new InlineValidator<Person>();
+			validator.RuleFor(x => x.Surname).MustAsync((x, ct) => Task.FromResult(true));
+			await validator.ShouldNotHaveValidationErrorForAsync(x => x.Surname, null as string);
+		}
+
+		[Fact]
+		public async Task ShouldNotHaveValidationError_async_throws() {
+			var validator = new InlineValidator<Person>();
+			validator.RuleFor(x => x.Surname).MustAsync((x, ct) => Task.FromResult(false));
+			await Assert.ThrowsAsync<ValidationTestException>(async () => {
+				await validator.ShouldNotHaveValidationErrorForAsync(x => x.Surname, null as string);
+			});
+		}
+
+		[Fact]
+		public async Task ShouldHaveValidationError_model_async() {
+			var validator = new InlineValidator<Person>();
+			validator.RuleFor(x => x.Surname).MustAsync((x, ct) => Task.FromResult(false));
+			await validator.ShouldHaveValidationErrorForAsync(x => x.Surname, new Person());
+		}
+
+		[Fact]
+		public async Task ShouldHaveValidationError_model_async_throws() {
+			var validator = new InlineValidator<Person>();
+			validator.RuleFor(x => x.Surname).MustAsync((x, ct) => Task.FromResult(true));
+			await Assert.ThrowsAsync<ValidationTestException>(async () => {
+				await validator.ShouldHaveValidationErrorForAsync(x => x.Surname, new Person());
+			});
+		}
+
+		[Fact]
+		public async Task ShouldNotHaveValidationError_model_async() {
+			var validator = new InlineValidator<Person>();
+			validator.RuleFor(x => x.Surname).MustAsync((x, ct) => Task.FromResult(true));
+			await validator.ShouldNotHaveValidationErrorForAsync(x => x.Surname, new Person());
+		}
+
+		[Fact]
+		public async Task ShouldNotHaveValidationError_async_model_throws() {
+			var validator = new InlineValidator<Person>();
+			validator.RuleFor(x => x.Surname).MustAsync((x, ct) => Task.FromResult(false));
+			await Assert.ThrowsAsync<ValidationTestException>(async () => {
+				await validator.ShouldNotHaveValidationErrorForAsync(x => x.Surname, new Person());
+			});
+		}
+
 		private class AddressValidator : AbstractValidator<Address> {
 		}
 
@@ -693,7 +812,7 @@ namespace FluentValidation.Tests {
 			public string Street { get; set; }
 		}
 
-		public class Address2Validator : AbstractValidator<Address2> {
+		public class Address2Validator : InlineValidator<Address2> {
 			public static string RuleLocationNames = "LocationNames";
 
 			public Address2Validator() {

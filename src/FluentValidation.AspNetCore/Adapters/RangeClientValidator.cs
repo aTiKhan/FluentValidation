@@ -16,18 +16,17 @@
 // The latest version of this file can be found at https://github.com/FluentValidation/FluentValidation
 #endregion
 namespace FluentValidation.AspNetCore {
-	using System.Collections.Generic;
 	using Internal;
 	using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 	using Resources;
+	using System;
+	using System.Globalization;
 	using Validators;
 
 	internal class RangeClientValidator : ClientValidatorBase {
-		InclusiveBetweenValidator RangeValidator {
-			get { return (InclusiveBetweenValidator)Validator; }
-		}
+		IBetweenValidator RangeValidator => (IBetweenValidator)Validator;
 
-		public RangeClientValidator(PropertyRule rule, IPropertyValidator validator) : base(rule, validator) {
+		public RangeClientValidator(IValidationRule rule, IRuleComponent component) : base(rule, component) {
 
 		}
 
@@ -35,8 +34,8 @@ namespace FluentValidation.AspNetCore {
 			if (RangeValidator.To != null && RangeValidator.From != null) {
 				MergeAttribute(context.Attributes, "data-val", "true");
 				MergeAttribute(context.Attributes, "data-val-range", GetErrorMessage(context));
-				MergeAttribute(context.Attributes, "data-val-range-max", RangeValidator.To.ToString());
-				MergeAttribute(context.Attributes, "data-val-range-min", RangeValidator.From.ToString());
+				MergeAttribute(context.Attributes, "data-val-range-max", Convert.ToString(RangeValidator.To, CultureInfo.InvariantCulture));
+				MergeAttribute(context.Attributes, "data-val-range-min", Convert.ToString(RangeValidator.From, CultureInfo.InvariantCulture));
 			}
 		}
 
@@ -44,23 +43,20 @@ namespace FluentValidation.AspNetCore {
 			var cfg = context.ActionContext.HttpContext.RequestServices.GetValidatorConfiguration();
 
 			var formatter = cfg.MessageFormatterFactory()
-				.AppendPropertyName(Rule.GetDisplayName())
+				.AppendPropertyName(Rule.GetDisplayName(null))
 				.AppendArgument("From", RangeValidator.From)
 				.AppendArgument("To", RangeValidator.To);
-
-			var needsSimplifiedMessage = RangeValidator.Options.ErrorMessageSource is LanguageStringSource;
 
 			string message;
 
 			try {
-				message = RangeValidator.Options.ErrorMessageSource.GetString(null);
+				message = Component.GetUnformattedErrorMessage();
 			}
-			catch (FluentValidationMessageFormatException) {
+			catch (NullReferenceException) {
 				message = cfg.LanguageManager.GetString("InclusiveBetween_Simple");
-				needsSimplifiedMessage = false;
 			}
 
-			if (needsSimplifiedMessage && message.Contains("{Value}")) {
+			if (message.Contains("{PropertyValue}")) {
 				message = cfg.LanguageManager.GetString("InclusiveBetween_Simple");
 			}
 			message = formatter.BuildMessage(message);

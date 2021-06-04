@@ -20,8 +20,6 @@ namespace FluentValidation.Tests {
 	using System.Linq;
 	using System.Threading.Tasks;
 	using Xunit;
-	using Results;
-
 
 	public class CustomValidatorTester {
 		private TestValidator validator;
@@ -49,8 +47,9 @@ namespace FluentValidation.Tests {
 		public async Task New_Custom_Returns_single_failure_async() {
 			validator
 				.RuleFor(x => x)
-				.CustomAsync(async (x, context, cancel) => {
+				.CustomAsync((x, context, cancel) => {
 					context.AddFailure("Surname", "Fail");
+					return Task.CompletedTask;
 				});
 
 			var result = await validator.ValidateAsync(new Person());
@@ -86,7 +85,7 @@ namespace FluentValidation.Tests {
 				});
 			});
 
-			var result = validator.Validate(new Person(), ruleSet: "foo");
+			var result = validator.Validate(new Person(), v => v.IncludeRuleSets("foo"));
 			result.Errors.Count.ShouldEqual(1);
 		}
 
@@ -95,18 +94,20 @@ namespace FluentValidation.Tests {
 			var validator = new InlineValidator<Person>();
 
 			validator.RuleSet("foo", () => {
-				validator.RuleFor(x => x).CustomAsync(async (x, ctx,cancel) => {
+				validator.RuleFor(x => x).CustomAsync((x, ctx,cancel) => {
 					ctx.AddFailure("x", "y");
+					return Task.CompletedTask;
 				});
 			});
 
 			validator.RuleSet("bar", () => {
-				validator.RuleFor(x => x).CustomAsync(async (x, ctx,cancel) => {
+				validator.RuleFor(x => x).CustomAsync((x, ctx,cancel) => {
 					ctx.AddFailure("x", "y");
+					return Task.CompletedTask;
 				});
 			});
 
-			var result = await validator.ValidateAsync(new Person(), ruleSet: "foo");
+			var result = await validator.ValidateAsync(new Person(), v => v.IncludeRuleSets("foo"));
 			result.Errors.Count.ShouldEqual(1);
 		}
 
@@ -144,7 +145,10 @@ namespace FluentValidation.Tests {
 
 		[Fact]
 		public void Runs_async_rule_synchronously_when_validator_invoked_synchronously() {
-			validator.RuleFor(x => x.Forename).CustomAsync(async (x, context, cancel) => context.AddFailure("foo"));
+			validator.RuleFor(x => x.Forename).CustomAsync((x, context, cancel) => {
+				context.AddFailure("foo");
+				return Task.CompletedTask;
+			});
 			var result = validator.Validate(new Person());
 			result.Errors.Count.ShouldEqual(1);
 		}
@@ -156,10 +160,47 @@ namespace FluentValidation.Tests {
 			result.Errors.Count.ShouldEqual(1);
 		}
 
+		[Fact]
+		public void Allows_placeholders() {
+			validator.RuleFor(x => x.Forename).Custom((name, context) => {
+				context.MessageFormatter.AppendArgument("Foo", "1");
+				context.AddFailure("{Foo}");
+			});
+			var result = validator.Validate(new Person());
+			result.Errors.Single().ErrorMessage.ShouldEqual("1");
+		}
+
+		[Fact]
+		public void Allows_conditions() {
+			validator.RuleFor(x => x.Forename).Custom((name, ctx) => {
+				ctx.AddFailure("foo");
+			}).When(x => x.Age < 18);
+
+			var result = validator.Validate(new Person() {Age = 17});
+			result.IsValid.ShouldBeFalse();
+
+			result = validator.Validate(new Person() {Age = 18});
+			result.IsValid.ShouldBeTrue();
+		}
+
+		[Fact]
+		public async Task Allows_conditions_async() {
+			validator.RuleFor(x => x.Forename).CustomAsync((name, ctx, ct) => {
+				ctx.AddFailure("foo");
+				return Task.CompletedTask;
+			}).WhenAsync((x, ct) => Task.FromResult(x.Age < 18));
+
+			var result = await validator.ValidateAsync(new Person() {Age = 17});
+			result.IsValid.ShouldBeFalse();
+
+			result = await validator.ValidateAsync(new Person() {Age = 18});
+			result.IsValid.ShouldBeTrue();
+		}
+
 		private class NestedOrderValidator : AbstractValidator<Order> {
 			public NestedOrderValidator() {
 				RuleFor(x=>x).Custom((x, ctx) => {
-					ctx.AddFailure(ctx.ParentContext.PropertyChain.BuildPropertyName("Amount"), "bar");
+					ctx.AddFailure("Amount", "bar");
 				});
 			}
 		}

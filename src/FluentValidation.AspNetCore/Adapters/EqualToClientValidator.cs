@@ -16,6 +16,7 @@
 // The latest version of this file can be found at https://github.com/FluentValidation/FluentValidation
 #endregion
 namespace FluentValidation.AspNetCore {
+	using System;
 	using System.Collections.Generic;
 	using System.Reflection;
 	using Internal;
@@ -24,19 +25,16 @@ namespace FluentValidation.AspNetCore {
 	using Validators;
 
 	internal class EqualToClientValidator : ClientValidatorBase {
-		EqualValidator EqualValidator {
-			get { return (EqualValidator)Validator; }
-		}
+		IComparisonValidator EqualValidator => (IComparisonValidator)Validator;
 
-		public EqualToClientValidator(PropertyRule rule, IPropertyValidator validator) : base(rule, validator) {
+		public EqualToClientValidator(IValidationRule rule, IRuleComponent component) : base(rule, component) {
 		}
 
 		public override void AddValidation(ClientModelValidationContext context) {
 
 			var propertyToCompare = EqualValidator.MemberToCompare as PropertyInfo;
 
-			if (propertyToCompare != null)
-			{
+			if (propertyToCompare != null) {
 				var cfg = context.ActionContext.HttpContext.RequestServices.GetValidatorConfiguration();
 				// If propertyToCompare is not null then we're comparing to another property.
 				// If propertyToCompare is null then we're either comparing against a literal value, a field or a method call.
@@ -47,15 +45,15 @@ namespace FluentValidation.AspNetCore {
 					?? propertyToCompare.Name.SplitPascalCase();
 
 				var formatter = cfg.MessageFormatterFactory()
-					.AppendPropertyName(Rule.GetDisplayName())
+					.AppendPropertyName(Rule.GetDisplayName(null))
 					.AppendArgument("ComparisonValue", comparisonDisplayName);
 
 				string messageTemplate;
 				try {
-					messageTemplate = EqualValidator.Options.ErrorMessageSource.GetString(null);
+					messageTemplate = Component.GetUnformattedErrorMessage();
 				}
-				catch (FluentValidationMessageFormatException) {
-					messageTemplate = cfg.LanguageManager.GetStringForValidator<EqualValidator>();
+				catch (NullReferenceException) {
+					messageTemplate = cfg.LanguageManager.GetString("EqualValidator");
 				}
 				string message = formatter.BuildMessage(messageTemplate);
 				MergeAttribute(context.Attributes, "data-val", "true");

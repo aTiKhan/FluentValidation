@@ -1,4 +1,4 @@
-﻿#region License
+#region License
 // Copyright (c) .NET Foundation and contributors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,19 +29,19 @@ namespace FluentValidation.AspNetCore
 		/// Invoked before MVC validation takes place which allows the ValidationContext to be customized prior to validation.
 		/// It should return a ValidationContext object.
 		/// </summary>
-		/// <param name="controllerContext">Controller Context</param>
-		/// <param name="validationContext">Validation Context</param>
+		/// <param name="actionContext">Action Context</param>
+		/// <param name="commonContext">Validation Context</param>
 		/// <returns>Validation Context</returns>
-		ValidationContext BeforeMvcValidation(ControllerContext controllerContext, ValidationContext validationContext);
+		IValidationContext BeforeAspNetValidation(ActionContext actionContext, IValidationContext commonContext);
 
 		/// <summary>
 		/// Invoked after MVC validation takes place which allows the result to be customized.
 		/// It should return a ValidationResult.
 		/// </summary>
-		/// <param name="controllerContext">Controller Context</param>
+		/// <param name="actionContext">Controller Context</param>
 		/// <param name="validationContext">Validation Context</param>
 		/// <param name="result">The result of validation.</param>
 		/// <returns>Validation Context</returns>
-		ValidationResult AfterMvcValidation(ControllerContext controllerContext, ValidationContext validationContext, ValidationResult result);
+		ValidationResult AfterAspNetValidation(ActionContext actionContext, IValidationContext validationContext, ValidationResult result);
 	}
 }

@@ -16,6 +16,7 @@
 // The latest version of this file can be found at https://github.com/FluentValidation/FluentValidation
 #endregion
 namespace FluentValidation.AspNetCore {
+	using System;
 	using System.Collections.Generic;
 	using Internal;
 	using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
@@ -23,12 +24,12 @@ namespace FluentValidation.AspNetCore {
 	using Validators;
 
 	internal class StringLengthClientValidator : ClientValidatorBase {
-		public StringLengthClientValidator(PropertyRule rule, IPropertyValidator validator)
-			: base(rule, validator) {
+		public StringLengthClientValidator(IValidationRule rule, IRuleComponent component)
+			: base(rule, component) {
 		}
 
 		public override void AddValidation(ClientModelValidationContext context) {
-			var lengthVal = (LengthValidator)Validator;
+			var lengthVal = (ILengthValidator)Validator;
 
 			MergeAttribute(context.Attributes, "data-val", "true");
 			MergeAttribute(context.Attributes, "data-val-length", GetErrorMessage(lengthVal, context));
@@ -36,33 +37,30 @@ namespace FluentValidation.AspNetCore {
 			MergeAttribute(context.Attributes, "data-val-length-min", lengthVal.Min.ToString());
 		}
 
-		private string GetErrorMessage(LengthValidator lengthVal, ClientModelValidationContext context) {
+		private string GetErrorMessage(ILengthValidator lengthVal, ClientModelValidationContext context) {
 			var cfg = context.ActionContext.HttpContext.RequestServices.GetValidatorConfiguration();
 
 			var formatter = cfg.MessageFormatterFactory()
-				.AppendPropertyName(Rule.GetDisplayName())
+				.AppendPropertyName(Rule.GetDisplayName(null))
 				.AppendArgument("MinLength", lengthVal.Min)
 				.AppendArgument("MaxLength", lengthVal.Max);
 
-			bool needsSimplifiedMessage = lengthVal.Options.ErrorMessageSource is LanguageStringSource;
-
 			string message;
 			try {
-				message = lengthVal.Options.ErrorMessageSource.GetString(null);
+				message = Component.GetUnformattedErrorMessage();
 			}
-			catch (FluentValidationMessageFormatException) {
-				if (lengthVal is ExactLengthValidator) {
+			catch (NullReferenceException) {
+				if (lengthVal is IExactLengthValidator) {
 					message = cfg.LanguageManager.GetString("ExactLength_Simple");
 				}
 				else {
 					message = cfg.LanguageManager.GetString("Length_Simple");
 				}
-
-				needsSimplifiedMessage = false;
 			}
 
-			if (needsSimplifiedMessage && message.Contains("{TotalLength}")) {
-				if (lengthVal is ExactLengthValidator) {
+
+			if (message.Contains("{TotalLength}")) {
+				if (lengthVal is IExactLengthValidator) {
 					message = cfg.LanguageManager.GetString("ExactLength_Simple");
 				}
 				else {

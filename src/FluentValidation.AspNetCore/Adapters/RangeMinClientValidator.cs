@@ -2,14 +2,14 @@ namespace FluentValidation.AspNetCore {
 	using Internal;
 	using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 	using Resources;
+	using System;
+	using System.Globalization;
 	using Validators;
 
 	internal class RangeMinClientValidator : ClientValidatorBase {
-		GreaterThanOrEqualValidator RangeValidator {
-			get { return (GreaterThanOrEqualValidator)Validator; }
-		}
+		IComparisonValidator RangeValidator => (IComparisonValidator)Validator;
 
-		public RangeMinClientValidator(PropertyRule rule, IPropertyValidator validator) : base(rule, validator) {
+		public RangeMinClientValidator(IValidationRule rule, IRuleComponent component) : base(rule, component) {
 
 		}
 
@@ -19,7 +19,7 @@ namespace FluentValidation.AspNetCore {
 			if (compareValue != null) {
 				MergeAttribute(context.Attributes, "data-val", "true");
 				MergeAttribute(context.Attributes, "data-val-range", GetErrorMessage(context));
-				MergeAttribute(context.Attributes, "data-val-range-min", compareValue.ToString());
+				MergeAttribute(context.Attributes, "data-val-range-min", Convert.ToString(compareValue, CultureInfo.InvariantCulture));
 			}
 		}
 
@@ -27,15 +27,16 @@ namespace FluentValidation.AspNetCore {
 			var cfg = context.ActionContext.HttpContext.RequestServices.GetValidatorConfiguration();
 
 			var formatter = cfg.MessageFormatterFactory()
-				.AppendPropertyName(Rule.GetDisplayName())
+				.AppendPropertyName(Rule.GetDisplayName(null))
 				.AppendArgument("ComparisonValue", RangeValidator.ValueToCompare);
 
 			string message;
 
 			try {
-				message = RangeValidator.Options.ErrorMessageSource.GetString(null);
-			} catch (FluentValidationMessageFormatException) {
-				message = cfg.LanguageManager.GetStringForValidator<GreaterThanOrEqualValidator>();
+				message = Component.GetUnformattedErrorMessage();
+			}
+			catch (NullReferenceException) {
+				message = cfg.LanguageManager.GetString("GreaterThanOrEqualValidator");
 			}
 
 			message = formatter.BuildMessage(message);

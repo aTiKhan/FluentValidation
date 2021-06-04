@@ -61,14 +61,30 @@ namespace FluentValidation.Tests {
 
 		[Fact]
 		public void Comparison_type() {
-			new LessThanOrEqualValidator(value).Comparison.ShouldEqual(Comparison.LessThanOrEqual);
+			new LessThanOrEqualValidator<Person,int>(value).Comparison.ShouldEqual(Comparison.LessThanOrEqual);
 		}
 
 		[Fact]
 		public void Validates_with_property() {
-			validator = new TestValidator(v => v.RuleFor(x => x.Id).LessThanOrEqualTo(x => x.AnotherInt));
+			validator = new TestValidator(v => v.RuleFor(x => x.Id).LessThanOrEqualTo(x => x.AnotherInt).WithMessage("{ComparisonProperty}"));
 			var result = validator.Validate(new Person {Id = 1, AnotherInt = 0});
 			result.IsValid.ShouldBeFalse();
+			result.Errors[0].ErrorMessage.ShouldEqual("Another Int");
+		}
+
+		[Fact]
+		public void Comparison_property_uses_custom_resolver() {
+			var originalResolver = ValidatorOptions.Global.DisplayNameResolver;
+
+			try {
+				ValidatorOptions.Global.DisplayNameResolver = (type, member, expr) => member.Name + "Foo";
+				validator = new TestValidator(v => v.RuleFor(x => x.Id).LessThanOrEqualTo(x => x.AnotherInt).WithMessage("{ComparisonProperty}"));
+				var result = validator.Validate(new Person {Id = 1, AnotherInt = 0});
+				result.Errors[0].ErrorMessage.ShouldEqual("AnotherIntFoo");
+			}
+			finally {
+				ValidatorOptions.Global.DisplayNameResolver = originalResolver;
+			}
 		}
 
 		[Fact]

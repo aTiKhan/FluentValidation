@@ -17,17 +17,16 @@
 #endregion
 
 namespace FluentValidation.Validators {
-	using Resources;
+	public class NullValidator<T,TProperty> : PropertyValidator<T,TProperty>, INullValidator {
 
-	public class NullValidator : PropertyValidator, INullValidator {
-		public NullValidator() : base(new LanguageStringSource(nameof(NullValidator))) {
+		public override string Name => "NullValidator";
 
+		public override bool IsValid(ValidationContext<T> context, TProperty value) {
+			return value == null;
 		}
-		protected override bool IsValid(PropertyValidatorContext context) {
-			if (context.PropertyValue != null) {
-				return false;
-			}
-			return true;
+
+		protected override string GetDefaultMessageTemplate(string errorCode) {
+			return Localized(errorCode, Name);
 		}
 	}
 

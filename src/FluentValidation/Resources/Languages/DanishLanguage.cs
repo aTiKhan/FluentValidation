@@ -1,4 +1,5 @@
 #region License
+
 // Copyright (c) .NET Foundation and contributors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,45 +15,48 @@
 // limitations under the License.
 //
 // The latest version of this file can be found at https://github.com/FluentValidation/FluentValidation
+
 #endregion
+
+#pragma warning disable 618
 
 namespace FluentValidation.Resources {
 	using Validators;
 
-	internal class DanishLanguage : Language {
+	internal class DanishLanguage {
 		public const string Culture = "da";
-		public override string Name => Culture;
 
-		public DanishLanguage() {
-			Translate<EmailValidator>("'{PropertyName}' er ikke en gyldig e-mail-adresse.");
-			Translate<GreaterThanOrEqualValidator>("'{PropertyName}' skal være større end eller lig med '{ComparisonValue}'.");
-			Translate<GreaterThanValidator>("'{PropertyName}' skal være større end '{ComparisonValue}'.");
-			Translate<LengthValidator>("'{PropertyName}' skal være mellem {MinLength} og {MaxLength} tegn. Du har indtastet {TotalLength} tegn.");
-			Translate<MinimumLengthValidator>("'{PropertyName}' skal være større end eller lig med {MinLength} tegn. Du indtastede {TotalLength} tegn.");
-			Translate<MaximumLengthValidator>("'{PropertyName}' skal være mindre end eller lig med {MaxLength} tegn. Du indtastede {TotalLength} tegn.");
-			Translate<LessThanOrEqualValidator>("'{PropertyName}' skal være mindre end eller lig med '{ComparisonValue}'.");
-			Translate<LessThanValidator>("'{PropertyName}' skal være mindre end '{ComparisonValue}'.");
-			Translate<NotEmptyValidator>("'{PropertyName}' bør ikke være tom.");
-			Translate<NotEqualValidator>("'{PropertyName}' bør ikke være lig med '{ComparisonValue}'.");
-			Translate<NotNullValidator>("'{PropertyName}' må ikke være tomme.");
-			Translate<PredicateValidator>("Den angivne betingelse var ikke opfyldt for '{PropertyName}'.");
-			Translate<AsyncPredicateValidator>("Den angivne betingelse var ikke opfyldt for '{PropertyName}'.");
-			Translate<RegularExpressionValidator>("'{PropertyName}' er ikke i det rigtige format.");
-			Translate<EqualValidator>("'{PropertyName}' skal være lig med '{ComparisonValue}'.");
-			Translate<ExactLengthValidator>("'{PropertyName}' skal være {MaxLength} tegn langt. Du har indtastet {TotalLength} tegn.");
-			Translate<InclusiveBetweenValidator>("'{PropertyName}' skal være mellem {From} og {To}. Du har indtastet {Value}.");
-			Translate<ExclusiveBetweenValidator>("'{PropertyName}' skal være mellem {From} og {To} (eksklusiv). Du har indtastet {Value}.");
-			Translate<CreditCardValidator>("'{PropertyName}' er ikke et gyldigt kreditkortnummer.");
-			Translate<ScalePrecisionValidator>("'{PropertyName}' må ikke være mere end {ExpectedPrecision} cifre i alt, med hensyn til {ExpectedScale} decimaler. {Digits} cifre og {ActualScale} decimaler blev fundet.");
-			Translate<EmptyValidator>("'{PropertyName}' skal være tomt.");
-			Translate<NullValidator>("'{PropertyName}' skal være tomt.");
-			Translate<EnumValidator>("'{PropertyName}' har en række værdier, der ikke indeholder '{PropertyValue}'.");
+		public static string GetTranslation(string key) => key switch {
+			"EmailValidator" => "'{PropertyName}' er ikke en gyldig e-mail-adresse.",
+			"GreaterThanOrEqualValidator" => "'{PropertyName}' skal være større end eller lig med '{ComparisonValue}'.",
+			"GreaterThanValidator" => "'{PropertyName}' skal være større end '{ComparisonValue}'.",
+			"LengthValidator" => "'{PropertyName}' skal være mellem {MinLength} og {MaxLength} tegn. Du har indtastet {TotalLength} tegn.",
+			"MinimumLengthValidator" => "'{PropertyName}' skal være større end eller lig med {MinLength} tegn. Du indtastede {TotalLength} tegn.",
+			"MaximumLengthValidator" => "'{PropertyName}' skal være mindre end eller lig med {MaxLength} tegn. Du indtastede {TotalLength} tegn.",
+			"LessThanOrEqualValidator" => "'{PropertyName}' skal være mindre end eller lig med '{ComparisonValue}'.",
+			"LessThanValidator" => "'{PropertyName}' skal være mindre end '{ComparisonValue}'.",
+			"NotEmptyValidator" => "'{PropertyName}' bør ikke være tom.",
+			"NotEqualValidator" => "'{PropertyName}' bør ikke være lig med '{ComparisonValue}'.",
+			"NotNullValidator" => "'{PropertyName}' må ikke være tomme.",
+			"PredicateValidator" => "Den angivne betingelse var ikke opfyldt for '{PropertyName}'.",
+			"AsyncPredicateValidator" => "Den angivne betingelse var ikke opfyldt for '{PropertyName}'.",
+			"RegularExpressionValidator" => "'{PropertyName}' er ikke i det rigtige format.",
+			"EqualValidator" => "'{PropertyName}' skal være lig med '{ComparisonValue}'.",
+			"ExactLengthValidator" => "'{PropertyName}' skal være {MaxLength} tegn langt. Du har indtastet {TotalLength} tegn.",
+			"InclusiveBetweenValidator" => "'{PropertyName}' skal være mellem {From} og {To}. Du har indtastet {PropertyValue}.",
+			"ExclusiveBetweenValidator" => "'{PropertyName}' skal være mellem {From} og {To} (eksklusiv). Du har indtastet {PropertyValue}.",
+			"CreditCardValidator" => "'{PropertyName}' er ikke et gyldigt kreditkortnummer.",
+			"ScalePrecisionValidator" => "'{PropertyName}' må ikke være mere end {ExpectedPrecision} cifre i alt, med hensyn til {ExpectedScale} decimaler. {Digits} cifre og {ActualScale} decimaler blev fundet.",
+			"EmptyValidator" => "'{PropertyName}' skal være tomt.",
+			"NullValidator" => "'{PropertyName}' skal være tomt.",
+			"EnumValidator" => "'{PropertyName}' har en række værdier, der ikke indeholder '{PropertyValue}'.",
 			// Additional fallback messages used by clientside validation integration.
-			Translate("Length_Simple", "'{PropertyName}' skal være mellem {MinLength} og {MaxLength} tegn.");
-			Translate("MinimumLength_Simple", "'{PropertyName}' skal være større end eller lig med {MinLength} tegn.");
-			Translate("MaximumLength_Simple", "'{PropertyName}' skal være mindre end eller lig med {MaxLength} tegn.");
-			Translate("ExactLength_Simple", "'{PropertyName}' skal være {MaxLength} tegn langt.");
-			Translate("InclusiveBetween_Simple", "'{PropertyName}' skal være mellem {From} og {To}.");
-		}
+			"Length_Simple" => "'{PropertyName}' skal være mellem {MinLength} og {MaxLength} tegn.",
+			"MinimumLength_Simple" => "'{PropertyName}' skal være større end eller lig med {MinLength} tegn.",
+			"MaximumLength_Simple" => "'{PropertyName}' skal være mindre end eller lig med {MaxLength} tegn.",
+			"ExactLength_Simple" => "'{PropertyName}' skal være {MaxLength} tegn langt.",
+			"InclusiveBetween_Simple" => "'{PropertyName}' skal være mellem {From} og {To}.",
+			_ => null,
+		};
 	}
 }
